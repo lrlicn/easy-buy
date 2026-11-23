@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, Image, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { getProduct } from '../../data/products'
-import { addToCart } from '../../store/cart'
+import { addToCart, useCart } from '../../store/cart'
 import './index.scss'
 
 export default function Detail() {
@@ -10,6 +10,8 @@ export default function Detail() {
   const [color, setColor] = useState('')
   const [size, setSize] = useState('')
   const product = getProduct(Taro.getCurrentInstance().router?.params?.id)
+  const cartItems = useCart()
+  const cartCount = cartItems.reduce((s, i) => s + i.qty, 0)
 
   useLoad(() => {
     // 默认选中第一个规格
@@ -57,6 +59,10 @@ export default function Detail() {
     Taro.navigateTo({ url: '/pages/pay/index' })
   }
 
+  // 跳转购物车
+  // 购物车是 tabBar 页面，必须用 switchTab
+  const goCart = () => Taro.switchTab({ url: '/pages/cart/index' })
+
   return (
     <View className='page'>
       <Image className='hero' src={product.image} mode='aspectFill' />
@@ -88,6 +94,9 @@ export default function Detail() {
       </View>
 
       <View className='footer'>
+        <View className='cart-entry' onClick={goCart}>
+          {cartCount > 0 && <Text className='cart-badge'>{cartCount}</Text>}
+        </View>
         <Button className='btn-cart' onClick={handleAdd}>加入购物车</Button>
         <Button className='btn-buy' onClick={handleBuyNow}>立即购买</Button>
       </View>

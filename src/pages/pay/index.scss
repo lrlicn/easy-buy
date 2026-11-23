@@ -34,6 +34,27 @@
   margin-bottom: 80rpx;
 }
 
+// 支付成功后的取件码展示
+.pickup-tip {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+
+  .pickup-label {
+    font-size: 26rpx;
+    color: #999;
+  }
+
+  .pickup-code {
+    font-size: 64rpx;
+    font-weight: 600;
+    letter-spacing: 12rpx;
+    color: #1a1a1a;
+  }
+}
+
 .home-btn {
   width: 400rpx;
   margin: 0 auto;
@@ -107,3 +128,21 @@
 .pay-btn {
   margin-top: 40rpx;
 }
+
+// 支付成功页的次级入口：查看我的订单
+.orders-btn {
+  margin-top: 20rpx !important;
+  width: 320rpx !important;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+  color: #1a1a1a;
+  background: #ffffff;
+  border: 1rpx solid #1a1a1a;
+  border-radius: 44rpx;
+
+  &::after {
+    border: none;
+  }
+}
+

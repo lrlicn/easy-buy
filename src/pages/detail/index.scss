@@ -1,6 +1,7 @@
 .page {
   min-height: 100vh;
-  padding-bottom: 160rpx;
+  // 底部留白需大于 footer 高度(约 128rpx)，保证"数量"行滚动到底时不被遮挡
+  padding-bottom: 240rpx;
 }
 
 .empty {
@@ -12,7 +13,8 @@
 
 .hero {
   width: 100%;
-  height: 750rpx;
+  // 原为 750rpx(正方形)，会导致规格区正好卡在首屏外、页面几乎无滚动量
+  height: 600rpx;
   display: block;
 }
 
@@ -107,6 +109,37 @@
   padding: 20rpx 24rpx;
   background: #fff;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+
+  // 购物车快捷入口：CSS 内嵌 SVG 图标（data URI 在 H5 与小程序端均可用）
+  .cart-entry {
+    position: relative;
+    flex-shrink: 0;
+    width: 88rpx;
+    height: 88rpx;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%231a1a1a'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='21'%20r='1'/%3E%3Ccircle%20cx='20'%20cy='21'%20r='1'/%3E%3Cpath%20d='M1%201h4l2.68%2013.39a2%202%200%200%200%202%201.61h9.72a2%202%200%200%200%202-1.61L23%206H6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 44rpx 44rpx;
+    border: 2rpx solid #1a1a1a;
+    border-radius: 50%;
+
+    .cart-badge {
+      position: absolute;
+      top: -12rpx;
+      right: -8rpx;
+      min-width: 32rpx;
+      height: 32rpx;
+      line-height: 32rpx;
+      padding: 0 8rpx;
+      box-sizing: border-box;
+      background: #d33;
+      color: #fff;
+      font-size: 20rpx;
+      text-align: center;
+      border-radius: 16rpx;
+    }
+  }
 
   .btn-cart {
     flex: 1;

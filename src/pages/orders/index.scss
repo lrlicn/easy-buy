@@ -1,0 +1,213 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.tip {
+  display: block;
+  text-align: center;
+  padding: 200rpx 0;
+  color: #999;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+
+  .time {
+    font-size: 24rpx;
+    color: #999;
+  }
+
+  .status {
+    font-size: 24rpx;
+    color: #d33;
+    font-weight: 600;
+
+    // 已核销状态
+    &.done {
+      color: #999;
+    }
+
+    // 已取消状态
+    &.cancelled {
+      color: #bbb;
+    }
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+
+  .row-img {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: 12rpx;
+    flex-shrink: 0;
+  }
+
+  .row-info {
+    flex: 1;
+    margin-left: 20rpx;
+
+    .row-name {
+      display: block;
+      font-size: 28rpx;
+      font-weight: 600;
+    }
+
+    .row-spec {
+      display: block;
+      font-size: 24rpx;
+      color: #999;
+      margin-top: 8rpx;
+    }
+  }
+
+  .row-price {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #d33;
+  }
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+
+  .total {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #d33;
+  }
+
+  .pickup-code {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+
+    .code-label {
+      font-size: 24rpx;
+      color: #999;
+    }
+
+    .code {
+      font-size: 36rpx;
+      font-weight: 600;
+      letter-spacing: 8rpx;
+      color: #1a1a1a;
+    }
+  }
+}
+
+// 出示取件码弹层
+.qr-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-modal {
+  width: 600rpx;
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .qm-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .qm-canvas {
+    width: 400rpx;
+    height: 400rpx;
+    margin-top: 32rpx;
+  }
+
+  .qm-code {
+    font-size: 56rpx;
+    font-weight: 700;
+    letter-spacing: 8rpx;
+    color: #1a1a1a;
+    margin-top: 24rpx;
+  }
+
+  .qm-tip {
+    font-size: 24rpx;
+    color: #999;
+    margin-top: 8rpx;
+  }
+
+  .qm-close {
+    margin-top: 32rpx !important;
+    width: 320rpx !important;
+    height: 80rpx;
+    line-height: 80rpx;
+    font-size: 28rpx;
+    color: #1a1a1a;
+    background: #ffffff;
+    border: 1rpx solid #1a1a1a;
+    border-radius: 40rpx;
+
+    &::after {
+      border: none;
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20rpx;
+
+  .action-btn {
+    min-width: 180rpx;
+    height: 60rpx;
+    line-height: 60rpx;
+    font-size: 26rpx;
+    color: #666;
+    background: #fff;
+    border: 1rpx solid #ddd;
+    border-radius: 999rpx;
+    padding: 0 32rpx;
+    margin: 0;
+
+    &::after {
+      border: none;
+    }
+
+    // 主操作：出示取件码
+    &.primary {
+      color: #fff;
+      background: #1a1a1a;
+      border-color: #1a1a1a;
+    }
+  }
+}

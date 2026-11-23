@@ -7,3 +7,5 @@ node_modules/
 .swc
 *.local
 /.miniapp/
+.trae/
+project.private.config.json

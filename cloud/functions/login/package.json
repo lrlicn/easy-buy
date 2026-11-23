@@ -1,0 +1,9 @@
+{
+  "name": "login",
+  "version": "1.0.0",
+  "description": "返回 openid 并判定店员身份",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

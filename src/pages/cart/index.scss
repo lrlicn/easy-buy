@@ -1,7 +1,8 @@
 .page {
   min-height: 100vh;
   padding: 24rpx;
-  padding-bottom: 160rpx;
+  // 底部操作栏 128rpx + tabBar（H5 端约 50px≈100rpx）的余量
+  padding-bottom: 280rpx;
   box-sizing: border-box;
 }
 
@@ -89,7 +90,8 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  // H5 端 tabBar 页面 --window-bottom 为 tabBar 高度，避开遮挡；小程序端原生 tabBar 不占窗口，回退为 0
+  bottom: var(--window-bottom, 0);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -111,5 +113,8 @@
 
   .checkout {
     width: 240rpx;
+    // 覆盖 Taro H5 Button 默认的 margin: auto，避免按钮被挤到中间
+    margin: 0;
+    margin-left: auto;
   }
 }

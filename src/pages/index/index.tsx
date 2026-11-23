@@ -1,11 +1,9 @@
-import { View, Text, Image, Button, ScrollView } from '@tarojs/components'
+import { View, Text, Image, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { products } from '../../data/products'
-import { useCart } from '../../store/cart'
 import './index.scss'
 
 export default function Index() {
-  const cart = useCart()
   // 线下扫码：二维码内容为商品 id 或含 /p/{id} 的链接
   const handleScan = () => {
     Taro.scanCode({
@@ -28,15 +26,12 @@ export default function Index() {
   }
 
   const goDetail = (id: string) => Taro.navigateTo({ url: `/pages/detail/index?id=${id}` })
-  const goCart = () => Taro.navigateTo({ url: '/pages/cart/index' })
 
   return (
     <View className='page'>
       <View className='header'>
         <View className='shop-name'>衣间 · 门店自选</View>
-        <View className='cart-entry' onClick={goCart}>
-          购物车{cart.length > 0 ? `(${cart.reduce((s, i) => s + i.qty, 0)})` : ''}
-        </View>
+        <View className='scan-entry' onClick={handleScan} />
       </View>
 
       <View className='scan-card'>
@@ -46,7 +41,8 @@ export default function Index() {
       </View>
 
       <View className='section-title'>店内所有衣物</View>
-      <ScrollView scrollY className='grid'>
+      {/* 普通容器即可：页面整体滚动，避免 scroll-view 在微信端 flex 布局失效 */}
+      <View className='grid'>
         {products.map(p => (
           <View key={p.id} className='card' onClick={() => goDetail(p.id)}>
             <Image className='card-img' src={p.image} mode='aspectFill' />
@@ -56,7 +52,7 @@ export default function Index() {
             </View>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   )
 }

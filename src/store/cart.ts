@@ -1,5 +1,6 @@
 // 购物车全局状态（模块级 store + useSyncExternalStore）
 import { useSyncExternalStore } from 'react'
+import Taro from '@tarojs/taro'
 
 export interface CartItem {
   key: string // 商品+规格唯一标识
@@ -15,9 +16,26 @@ export interface CartItem {
 let items: CartItem[] = []
 const listeners = new Set<() => void>()
 
+const CART_TAB_INDEX = 1 // tabBar 中购物车的位置
+
+// 把购物车件数同步到底部 tab 角标（非 tabBar 环境静默忽略）
+function syncTabBadge() {
+  const count = cartCount()
+  try {
+    if (count > 0) {
+      Taro.setTabBarBadge({ index: CART_TAB_INDEX, text: String(count) }).catch(() => {})
+    } else {
+      Taro.removeTabBarBadge({ index: CART_TAB_INDEX }).catch(() => {})
+    }
+  } catch {
+    // 无 tabBar 时（个别端/页面栈）忽略
+  }
+}
+
 function emit() {
   items = [...items] // 更新引用以触发订阅
   listeners.forEach(l => l())
+  syncTabBadge()
 }
 
 function subscribe(l: () => void) {
