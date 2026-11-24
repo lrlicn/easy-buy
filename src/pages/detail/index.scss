@@ -1,4 +1,4 @@
-.page {
+﻿.page {
   min-height: 100vh;
   // 底部留白需大于 footer 高度(约 128rpx)，保证"数量"行滚动到底时不被遮挡
   padding-bottom: 240rpx;
@@ -8,7 +8,7 @@
   display: block;
   text-align: center;
   padding: 200rpx 0;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .hero {
@@ -29,19 +29,61 @@
     margin-bottom: 12rpx;
   }
 
-  .price {
-    display: block;
-    font-size: 40rpx;
-    color: #d33;
-    font-weight: 600;
-    margin-bottom: 12rpx;
+  // 价格排版（京东同款层级）：¥ 小号、整数特大、小数缩小
+  .price-row {
+    display: flex;
+    align-items: baseline;
+    color: var(--color-price);
+    margin-bottom: 16rpx;
+
+    .price-symbol {
+      font-size: 28rpx;
+      font-weight: 600;
+      margin-right: 4rpx;
+    }
+
+    .price-int {
+      font-size: 56rpx;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .price-dec {
+      font-size: 30rpx;
+      font-weight: 600;
+    }
   }
 
   .desc {
     display: block;
     font-size: 26rpx;
-    color: #666;
+    color: var(--color-text-secondary);
     line-height: 1.6;
+  }
+
+  // 服务保障行：对应京东"自营品质"信任区
+  .service-row {
+    display: flex;
+    align-items: center;
+    margin-top: 20rpx;
+    padding: 16rpx 20rpx;
+    background: var(--color-muted-bg);
+    border-radius: 12rpx;
+
+    .service-tag {
+      font-size: 22rpx;
+      color: var(--color-price);
+      border: 1rpx solid var(--color-price);
+      border-radius: 6rpx;
+      padding: 2rpx 10rpx;
+      margin-right: 16rpx;
+      flex-shrink: 0;
+    }
+
+    .service-text {
+      font-size: 24rpx;
+      color: var(--color-text-secondary);
+    }
   }
 }
 
@@ -53,7 +95,7 @@
   .spec-label {
     display: block;
     font-size: 26rpx;
-    color: #999;
+    color: var(--color-text-muted);
     margin: 24rpx 0 16rpx;
   }
 
@@ -64,13 +106,13 @@
 
     .opt {
       padding: 12rpx 32rpx;
-      background: #f5f5f7;
-      border: 2rpx solid #f5f5f7;
+      background: var(--color-muted-bg);
+      border: 2rpx solid var(--color-muted-bg);
       border-radius: 8rpx;
       font-size: 26rpx;
 
       &.active {
-        border-color: #1a1a1a;
+        border-color: var(--color-text);
         background: #fff;
         font-weight: 600;
       }
@@ -87,7 +129,7 @@
       height: 64rpx;
       line-height: 64rpx;
       text-align: center;
-      background: #f5f5f7;
+      background: var(--color-muted-bg);
       border-radius: 8rpx;
       font-size: 32rpx;
     }
@@ -105,60 +147,101 @@
   right: 0;
   bottom: 0;
   display: flex;
-  gap: 20rpx;
+  align-items: center;
   padding: 20rpx 24rpx;
   background: #fff;
   box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
 
-  // 购物车快捷入口：CSS 内嵌 SVG 图标（data URI 在 H5 与小程序端均可用）
+  // 购物车快捷入口：图标 + 文字标签（京东底部"店铺/客服/购物车"同款），图标区与按钮间竖分隔线
   .cart-entry {
     position: relative;
     flex-shrink: 0;
-    width: 88rpx;
-    height: 88rpx;
-    background-color: #fff;
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%231a1a1a'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='21'%20r='1'/%3E%3Ccircle%20cx='20'%20cy='21'%20r='1'/%3E%3Cpath%20d='M1%201h4l2.68%2013.39a2%202%200%200%200%202%201.61h9.72a2%202%200%200%200%202-1.61L23%206H6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 44rpx 44rpx;
-    border: 2rpx solid #1a1a1a;
-    border-radius: 50%;
+    width: 100rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
-    .cart-badge {
-      position: absolute;
-      top: -12rpx;
-      right: -8rpx;
-      min-width: 32rpx;
-      height: 32rpx;
-      line-height: 32rpx;
-      padding: 0 8rpx;
-      box-sizing: border-box;
-      background: #d33;
-      color: #fff;
+    .cart-icon {
+      position: relative;
+      width: 100rpx;
+      height: 48rpx;
+      background-color: transparent;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%231a1a1a'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='9'%20cy='21'%20r='1'/%3E%3Ccircle%20cx='20'%20cy='21'%20r='1'/%3E%3Cpath%20d='M1%201h4l2.68%2013.39a2%202%200%200%200%202%201.61h9.72a2%202%200%200%200%202-1.61L23%206H6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 44rpx 44rpx;
+
+      .cart-badge {
+        position: absolute;
+        top: -12rpx;
+        right: 16rpx;
+        min-width: 32rpx;
+        height: 32rpx;
+        line-height: 32rpx;
+        padding: 0 8rpx;
+        box-sizing: border-box;
+        background: var(--color-price);
+        color: #fff;
+        font-size: 20rpx;
+        text-align: center;
+        border-radius: 16rpx;
+      }
+    }
+
+    .cart-label {
+      display: block;
       font-size: 20rpx;
-      text-align: center;
-      border-radius: 16rpx;
+      color: var(--color-text-secondary);
+      margin-top: 2rpx;
+    }
+
+    // 图标区右侧竖分隔线
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2rpx;
+      height: 56rpx;
+      background: var(--color-border);
     }
   }
 
-  .btn-cart {
+  // 一体双段按钮：一个胶囊容器分左右两段（京东/美团同款）
+  .buy-pill {
     flex: 1;
-    background: #fff;
-    color: #1a1a1a;
-    border: 2rpx solid #1a1a1a;
-    border-radius: 44rpx;
+    display: flex;
     height: 88rpx;
-    line-height: 88rpx;
-    font-size: 30rpx;
-  }
+    margin-left: 20rpx;
+    border-radius: 44rpx;
+    overflow: hidden;
 
-  .btn-buy {
-    flex: 1;
-    background: #1a1a1a;
-    color: #fff;
-    border-radius: 44rpx;
-    height: 88rpx;
-    line-height: 88rpx;
-    font-size: 30rpx;
+    .btn-cart,
+    .btn-buy {
+      flex: 1;
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+      height: 88rpx;
+      line-height: 88rpx;
+      font-size: 30rpx;
+      font-weight: 600;
+
+      &::after {
+        border: none;
+      }
+    }
+
+    .btn-cart {
+      background: var(--color-muted-bg);
+      color: var(--color-text);
+    }
+
+    .btn-buy {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
   }
 }

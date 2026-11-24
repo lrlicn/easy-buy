@@ -1,25 +1,43 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, Image, Button } from '@tarojs/components'
-import Taro, { useLoad } from '@tarojs/taro'
-import { getProduct } from '../../data/products'
+import Taro from '@tarojs/taro'
+import { getProductById } from '../../services/goods'
+import type { Product } from '../../data/products'
 import { addToCart, useCart } from '../../store/cart'
 import './index.scss'
 
 export default function Detail() {
+  const id = Taro.getCurrentInstance().router?.params?.id
+  // null = 加载中；undefined = 确认不存在
+  const [product, setProduct] = useState<Product | null | undefined>(null)
   const [qty, setQty] = useState(1)
   const [color, setColor] = useState('')
   const [size, setSize] = useState('')
-  const product = getProduct(Taro.getCurrentInstance().router?.params?.id)
   const cartItems = useCart()
   const cartCount = cartItems.reduce((s, i) => s + i.qty, 0)
 
-  useLoad(() => {
-    // 默认选中第一个规格
-    if (product) {
-      setColor(product.colors[0])
-      setSize(product.sizes[0])
+  // 商品异步加载：缓存未命中时会强制拉取云端（扫码冷启动场景）
+  useEffect(() => {
+    let alive = true
+    getProductById(id).then(p => {
+      if (alive) setProduct(p ?? undefined)
+    })
+    return () => {
+      alive = false
     }
-  })
+  }, [id])
+
+  // 商品就绪后默认选中第一个规格
+  useEffect(() => {
+    if (product) {
+      setColor(product.colors[0] || '')
+      setSize(product.sizes[0] || '')
+    }
+  }, [product])
+
+  if (product === null) {
+    return <View className='page'><Text className='empty'>加载中...</Text></View>
+  }
 
   if (!product) {
     return <View className='page'><Text className='empty'>商品不存在</Text></View>
@@ -27,6 +45,8 @@ export default function Detail() {
 
   const specReady = color && size
   const key = `${product.id}-${color}-${size}`
+  // 价格排版：整数特大、小数缩小（京东同款层级）
+  const [priceInt, priceDec] = product.price.toFixed(2).split('.')
 
   // 加入购物车
   const handleAdd = () => {
@@ -67,9 +87,18 @@ export default function Detail() {
     <View className='page'>
       <Image className='hero' src={product.image} mode='aspectFill' />
       <View className='info'>
+        <View className='price-row'>
+          <Text className='price-symbol'>¥</Text>
+          <Text className='price-int'>{priceInt}</Text>
+          <Text className='price-dec'>.{priceDec}</Text>
+        </View>
         <Text className='name'>{product.name}</Text>
-        <Text className='price'>¥{product.price}</Text>
         <Text className='desc'>{product.desc}</Text>
+        {/* 服务保障行：讲清自提流程（对应京东"自营品质"信任区） */}
+        <View className='service-row'>
+          <Text className='service-tag'>门店自提</Text>
+          <Text className='service-text'>支付后凭取件码到店取货，免运费</Text>
+        </View>
       </View>
 
       <View className='spec'>
@@ -95,10 +124,15 @@ export default function Detail() {
 
       <View className='footer'>
         <View className='cart-entry' onClick={goCart}>
-          {cartCount > 0 && <Text className='cart-badge'>{cartCount}</Text>}
+          <View className='cart-icon'>
+            {cartCount > 0 && <Text className='cart-badge'>{cartCount}</Text>}
+          </View>
+          <Text className='cart-label'>购物车</Text>
         </View>
-        <Button className='btn-cart' onClick={handleAdd}>加入购物车</Button>
-        <Button className='btn-buy' onClick={handleBuyNow}>立即购买</Button>
+        <View className='buy-pill'>
+          <Button className='btn-cart' onClick={handleAdd}>加入购物车</Button>
+          <Button className='btn-buy' onClick={handleBuyNow}>立即购买</Button>
+        </View>
       </View>
     </View>
   )

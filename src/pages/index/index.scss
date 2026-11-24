@@ -1,4 +1,4 @@
-.page {
+﻿.page {
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
@@ -26,7 +26,7 @@
 }
 
 .scan-card {
-  background: #1a1a1a;
+  background: var(--color-primary);
   border-radius: 24rpx;
   padding: 48rpx 40rpx;
   color: #fff;
@@ -48,7 +48,7 @@
 
   .scan-btn {
     background: #fff;
-    color: #1a1a1a;
+    color: var(--color-text);
     border-radius: 44rpx;
     height: 80rpx;
     line-height: 80rpx;
@@ -63,6 +63,74 @@
   margin-bottom: 20rpx;
 }
 
+// 热销推荐横滑条（小黄车式紧凑卡片）
+.rec-scroll {
+  white-space: nowrap;
+  margin-bottom: 32rpx;
+
+  .rec-strip {
+    display: inline-flex;
+    gap: 20rpx;
+    padding: 4rpx 4rpx 16rpx;
+  }
+
+  .rec-card {
+    display: inline-block;
+    width: 240rpx;
+    background: #fff;
+    border-radius: 16rpx;
+    overflow: hidden;
+    vertical-align: top;
+    white-space: normal;
+  }
+
+  .rec-img-wrap {
+    position: relative;
+
+    .rec-img {
+      width: 240rpx;
+      height: 240rpx;
+      display: block;
+    }
+  }
+
+  .rec-name {
+    display: block;
+    font-size: 24rpx;
+    margin: 12rpx 16rpx 4rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rec-price {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--color-price);
+    margin: 0 16rpx 16rpx;
+  }
+}
+
+// 运营标签角标（热销/新品）
+.badge {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  font-size: 20rpx;
+  color: #fff;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+
+  &.hot {
+    background: var(--color-price);
+  }
+
+  &.new {
+    background: var(--color-primary);
+  }
+}
+
 .grid {
   display: flex;
   flex-wrap: wrap;
@@ -75,10 +143,14 @@
     overflow: hidden;
     margin-bottom: 24rpx;
 
-    .card-img {
-      width: 100%;
-      height: 340rpx;
-      display: block;
+    .card-img-wrap {
+      position: relative;
+
+      .card-img {
+        width: 100%;
+        height: 340rpx;
+        display: block;
+      }
     }
 
     .card-info {
@@ -94,7 +166,7 @@
         display: block;
         font-size: 30rpx;
         font-weight: 600;
-        color: #d33;
+        color: var(--color-price);
       }
     }
   }

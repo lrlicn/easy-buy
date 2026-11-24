@@ -1,6 +1,6 @@
-.page {
+﻿.page {
   min-height: 100vh;
-  background: #f5f5f7;
+  background: var(--color-muted-bg);
   padding: 24rpx;
   box-sizing: border-box;
 }
@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   gap: 24rpx;
-  background: #1a1a1a;
+  background: var(--color-primary);
   border-radius: 24rpx;
   padding: 40rpx 32rpx;
   color: #fff;
@@ -18,8 +18,8 @@
     width: 104rpx;
     height: 104rpx;
     border-radius: 50%;
-    background: #f5f5f7;
-    color: #1a1a1a;
+    background: var(--color-muted-bg);
+    color: var(--color-text);
     font-size: 44rpx;
     font-weight: 600;
     display: flex;
@@ -64,7 +64,7 @@
 
     .menu-label {
       font-size: 30rpx;
-      color: #1a1a1a;
+      color: var(--color-text);
     }
 
     .menu-arrow {

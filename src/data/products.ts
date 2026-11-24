@@ -16,6 +16,8 @@ export interface Product {
   colors: string[]
   sizes: string[]
   desc: string
+  // 运营标签：hot=热销 new=新品；空串/缺省=不打标
+  tag?: 'hot' | 'new' | ''
 }
 
 export const products: Product[] = [

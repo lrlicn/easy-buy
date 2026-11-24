@@ -69,9 +69,9 @@ export function removeItem(key: string) {
   emit()
 }
 
-// 清空购物车（支付成功后调用）
-export function clearCart() {
-  items = []
+// 移除一批条目（支付成功后仅清除已结算的商品，未选中的保留）
+export function removeItems(keys: string[]) {
+  items = items.filter(i => !keys.includes(i.key))
   emit()
 }
 

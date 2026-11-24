@@ -1,14 +1,16 @@
-// 全局样式
+﻿// 全局样式
+@import './styles/theme.scss';
+
 page {
-  background-color: #f5f5f7;
+  background-color: var(--color-bg);
   font-size: 28rpx;
-  color: #1a1a1a;
+  color: var(--color-text);
 }
 
 // 通用按钮
 .btn-primary {
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   border-radius: 44rpx;
   text-align: center;
   height: 88rpx;

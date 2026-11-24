@@ -1,17 +1,49 @@
 import { View, Text, Image, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { useCart, changeQty, removeItem, cartTotal, cartCount } from '../../store/cart'
+import { useState } from 'react'
+import { useCart, changeQty, removeItem, cartCount } from '../../store/cart'
 import './index.scss'
 
 export default function Cart() {
   const items = useCart()
+  // 已勾选结算的行 key 集合（仅页面内存，进入购物车默认全选）
+  const [selected, setSelected] = useState<string[] | null>(null)
 
-  // 去结算：写入待支付订单并跳转支付页
+  // selected 为 null 表示尚未初始化：默认全选
+  const keys = items.map(i => i.key)
+  const selectedKeys =
+    selected === null ? keys : selected.filter(k => keys.includes(k))
+  const selectedItems = items.filter(i => selectedKeys.includes(i.key))
+  const allSelected = keys.length > 0 && selectedKeys.length === keys.length
+
+  // 同步勾选状态（null 时展开为全选）
+  const setSelectedKeys = (next: string[]) => setSelected(next)
+
+  const toggleItem = (key: string) => {
+    setSelectedKeys(
+      selectedKeys.includes(key)
+        ? selectedKeys.filter(k => k !== key)
+        : [...selectedKeys, key]
+    )
+  }
+
+  const toggleAll = () => {
+    setSelectedKeys(allSelected ? [] : keys)
+  }
+
+  // 只结算已勾选的商品
   const checkout = () => {
-    if (items.length === 0) return Taro.showToast({ title: '购物车是空的', icon: 'none' })
-    Taro.setStorageSync('pendingOrder', items)
+    if (selectedItems.length === 0)
+      return Taro.showToast({ title: '请先选择商品', icon: 'none' })
+    Taro.setStorageSync('pendingOrder', selectedItems)
     Taro.navigateTo({ url: '/pages/pay/index' })
   }
+
+  // 已选件数与合计
+  const selectedCount = selectedItems.reduce((s, i) => s + i.qty, 0)
+  const selectedTotal = selectedItems
+    .reduce((s, i) => s + i.price * i.qty, 0)
+    .toFixed(2)
 
   return (
     <View className='page'>
@@ -22,6 +54,13 @@ export default function Cart() {
       ) : (
         items.map(i => (
           <View key={i.key} className='row'>
+            {/* 勾选框 */}
+            <View
+              className={`check ${selectedKeys.includes(i.key) ? 'checked' : ''}`}
+              onClick={() => toggleItem(i.key)}
+            >
+              {selectedKeys.includes(i.key) && <Text className='check-mark'>✓</Text>}
+            </View>
             <Image className='row-img' src={i.image} mode='aspectFill' />
             <View className='row-info'>
               <Text className='row-name'>{i.name}</Text>
@@ -41,11 +80,25 @@ export default function Cart() {
       )}
 
       <View className='footer'>
+        {/* 全选 */}
+        {items.length > 0 && (
+          <View className='select-all' onClick={toggleAll}>
+            <View className={`check ${allSelected ? 'checked' : ''}`}>
+              {allSelected && <Text className='check-mark'>✓</Text>}
+            </View>
+            <Text>全选</Text>
+          </View>
+        )}
         <View className='total'>
-          <Text>共 {cartCount()} 件</Text>
-          <Text className='total-price'>合计 ¥{cartTotal()}</Text>
+          <Text className='total-label'>合计</Text>
+          <Text className='total-price'>¥{selectedTotal}</Text>
         </View>
-        <Button className='btn-primary checkout' onClick={checkout}>去结算</Button>
+        <Button
+          className={`btn-primary checkout ${selectedItems.length === 0 ? 'disabled' : ''}`}
+          onClick={checkout}
+        >
+          去结算{selectedItems.length > 0 ? `(${selectedCount})` : ''}
+        </Button>
       </View>
     </View>
   )

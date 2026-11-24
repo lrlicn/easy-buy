@@ -1,4 +1,4 @@
-.page {
+﻿.page {
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
@@ -14,7 +14,7 @@
   height: 120rpx;
   line-height: 120rpx;
   margin: 0 auto 32rpx;
-  background: #1a1a1a;
+  background: var(--color-primary);
   color: #fff;
   border-radius: 50%;
   font-size: 64rpx;
@@ -30,7 +30,7 @@
 .success-tip {
   display: block;
   font-size: 26rpx;
-  color: #999;
+  color: var(--color-text-muted);
   margin-bottom: 80rpx;
 }
 
@@ -44,14 +44,14 @@
 
   .pickup-label {
     font-size: 26rpx;
-    color: #999;
+    color: var(--color-text-muted);
   }
 
   .pickup-code {
     font-size: 64rpx;
     font-weight: 600;
     letter-spacing: 12rpx;
-    color: #1a1a1a;
+    color: var(--color-text);
   }
 }
 
@@ -68,7 +68,7 @@
 
   .pickup {
     font-size: 26rpx;
-    color: #666;
+    color: var(--color-text-secondary);
     padding-bottom: 24rpx;
     border-bottom: 1rpx solid #f0f0f0;
     margin-bottom: 8rpx;
@@ -100,7 +100,7 @@
     .row-spec {
       display: block;
       font-size: 24rpx;
-      color: #999;
+      color: var(--color-text-muted);
       margin-top: 8rpx;
     }
   }
@@ -108,7 +108,7 @@
   .row-price {
     font-size: 28rpx;
     font-weight: 600;
-    color: #d33;
+    color: var(--color-price);
   }
 }
 
@@ -120,7 +120,7 @@
 
   .total {
     font-size: 36rpx;
-    color: #d33;
+    color: var(--color-price);
     font-weight: 600;
   }
 }
@@ -136,9 +136,9 @@
   height: 88rpx;
   line-height: 88rpx;
   font-size: 30rpx;
-  color: #1a1a1a;
+  color: var(--color-text);
   background: #ffffff;
-  border: 1rpx solid #1a1a1a;
+  border: 1rpx solid var(--color-primary);
   border-radius: 44rpx;
 
   &::after {

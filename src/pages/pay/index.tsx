@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, Image, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
-import { clearCart, CartItem } from '../../store/cart'
+import { removeItems, CartItem } from '../../store/cart'
 import { createOrder } from '../../services/order'
 import './index.scss'
 
@@ -27,7 +27,7 @@ export default function Pay() {
       const created = await createOrder(order, total)
       setPickupCode(created.pickupCode)
       setPaid(true)
-      clearCart() // 支付成功后清空购物车
+      removeItems(order.map(i => i.key)) // 仅移除本次已结算的商品，未勾选的保留在购物车
       Taro.removeStorageSync('pendingOrder')
     } catch (e) {
       Taro.showToast({ title: '订单创建失败，请重试', icon: 'none' })
