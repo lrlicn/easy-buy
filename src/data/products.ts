@@ -18,6 +18,8 @@ export interface Product {
   desc: string
   // 运营标签：hot=热销 new=新品；空串/缺省=不打标
   tag?: 'hot' | 'new' | ''
+  // SKU 级库存：key 为 `${颜色}-${尺码}`；-1 或缺省 = 不限库存（兼容旧数据）
+  stocks?: Record<string, number>
 }
 
 export const products: Product[] = [

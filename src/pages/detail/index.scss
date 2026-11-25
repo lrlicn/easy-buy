@@ -99,6 +99,31 @@
     margin: 24rpx 0 16rpx;
   }
 
+  // 数量行：标签 + 右侧库存提示
+  .qty-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+
+    .spec-label {
+      margin-bottom: 16rpx;
+    }
+
+    .stock-hint {
+      font-size: 24rpx;
+      color: var(--color-text-muted);
+
+      &.low {
+        color: var(--color-price);
+      }
+
+      &.out {
+        color: var(--color-price);
+        font-weight: 600;
+      }
+    }
+  }
+
   .options {
     display: flex;
     flex-wrap: wrap;
@@ -231,6 +256,10 @@
 
       &::after {
         border: none;
+      }
+
+      &.disabled {
+        opacity: 0.4;
       }
     }
 

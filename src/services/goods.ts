@@ -41,6 +41,11 @@ export function findProduct(id?: string): Product | undefined {
   return cache?.find(p => p.id === id) || localProducts.find(p => p.id === id)
 }
 
+// 失效商品缓存：下单扣库存、商家改商品后调用，保证下次读取拿到最新数据
+export function invalidateGoodsCache(): void {
+  cache = null
+}
+
 // 按 id 异步查找：缓存/本地未命中时强制拉取一次云端列表
 // 覆盖"扫码吊牌二维码冷启动直达详情页"场景（此时缓存还是空的）
 export async function getProductById(id?: string): Promise<Product | undefined> {
@@ -84,6 +89,28 @@ export async function seedGoods(): Promise<number> {
   }
   Taro.setStorageSync('mock_goods', localProducts)
   return localProducts.length
+}
+
+// mock 模式的库存增减（delta=-1 下单扣减，+1 取消回补）
+// 仅调整本地 mock 商品；商品未设 stocks 字段（不限库存）则跳过
+export function adjustMockStock(
+  items: { productId: string; color: string; size: string; qty: number }[],
+  delta: 1 | -1
+): void {
+  const list = [...mockList()]
+  let changed = false
+  for (const it of items) {
+    const idx = list.findIndex(p => p.id === it.productId)
+    const p = list[idx]
+    if (!p?.stocks) continue
+    const key = `${it.color}-${it.size}`
+    const cur = p.stocks[key]
+    if (typeof cur !== 'number' || cur === -1) continue
+    const next = Math.max(0, cur + delta * it.qty)
+    list[idx] = { ...p, stocks: { ...p.stocks, [key]: next } }
+    changed = true
+  }
+  if (changed) Taro.setStorageSync('mock_goods', list)
 }
 
 // 选择图片并上传（微信端上传到云存储返回 fileID；mock 模式仅返回本地临时路径）

@@ -54,6 +54,15 @@ export default function Admin() {
       .catch(() => {})
   }
 
+  // 更新某个 SKU 的库存（输入框空 = 不限，存 -1）
+  const updateStock = (key: string, value: string) => {
+    setForm(f => {
+      if (!f) return f
+      const v = value.trim() === '' ? -1 : Number(value) || 0
+      return { ...f, stocks: { ...(f.stocks || {}), [key]: v } }
+    })
+  }
+
   const handleSaveGoods = async () => {
     if (!form) return
     if (!form.name.trim()) {
@@ -76,6 +85,15 @@ export default function Admin() {
     }
     // priceText 只用于输入框，不入库
     const { priceText, ...rest } = form
+    // 裁剪 stocks：只保留当前颜色×尺码组合的 key；未填的按"不限"（-1）落库
+    const stocks: Record<string, number> = {}
+    for (const c of colors) {
+      for (const s of sizes) {
+        const k = `${c}-${s}`
+        const v = form.stocks?.[k]
+        stocks[k] = typeof v === 'number' && v >= 0 ? v : -1
+      }
+    }
     const p: Product = {
       ...rest,
       name: form.name.trim(),
@@ -83,7 +101,8 @@ export default function Admin() {
       // 新商品生成 id；编辑沿用原 id
       id: form.id || `g${Date.now()}`,
       colors,
-      sizes
+      sizes,
+      stocks
     }
     try {
       await saveProduct(p)
@@ -282,6 +301,39 @@ export default function Admin() {
                   ))}
                 </View>
               </View>
+              {/* SKU 库存矩阵：颜色 × 尺码，留空 = 不限 */}
+              {form.colors.filter(c => c.trim()).length > 0 && form.sizes.filter(s => s.trim()).length > 0 && (
+                <View className='stock-matrix'>
+                  <Text className='stock-matrix-title'>库存设置（留空 = 不限）</Text>
+                  <View className='stock-grid'>
+                    <View className='stock-row'>
+                      <Text className='stock-cell stock-head-cell'>颜色 \ 尺码</Text>
+                      {form.sizes.filter(s => s.trim()).map(s => (
+                        <Text key={s} className='stock-cell stock-head-cell'>{s}</Text>
+                      ))}
+                    </View>
+                    {form.colors.filter(c => c.trim()).map(c => (
+                      <View key={c} className='stock-row'>
+                        <Text className='stock-cell stock-color'>{c}</Text>
+                        {form.sizes.filter(s => s.trim()).map(s => {
+                          const k = `${c}-${s}`
+                          const v = form.stocks?.[k]
+                          return (
+                            <Input
+                              key={k}
+                              className='stock-input'
+                              type='number'
+                              placeholder='不限'
+                              value={typeof v === 'number' && v >= 0 ? String(v) : ''}
+                              onInput={e => updateStock(k, e.detail.value)}
+                            />
+                          )
+                        })}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
               <View className='form-btns'>
                 <Button className='form-cancel' onClick={() => setForm(null)}>取消</Button>
                 <Button className='btn-primary form-save' onClick={handleSaveGoods}>保存</Button>

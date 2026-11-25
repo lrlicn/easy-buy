@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Image, Button, ScrollView } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { listGoods, findProduct } from '../../services/goods'
 import type { Product } from '../../data/products'
 import './index.scss'
@@ -14,6 +14,11 @@ export default function Index() {
   useEffect(() => {
     listGoods().then(setGoods).catch(() => setGoods([]))
   }, [])
+
+  // 首页是 tabBar 常驻页：每次切回都刷新（下单扣库存/商家改商品后回到首页能看到最新数据）
+  useDidShow(() => {
+    listGoods().then(setGoods).catch(() => {})
+  })
 
   // 推荐条：优先显示打了运营标签的商品，没有标签则取前 4 件
   const recommend = goods.filter(p => p.tag)

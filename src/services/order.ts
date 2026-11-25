@@ -3,6 +3,7 @@
 import Taro from '@tarojs/taro'
 import { CLOUD_ENV_ID, MOCK_STAFF } from '../config'
 import type { CartItem } from '../store/cart'
+import { adjustMockStock, invalidateGoodsCache } from './goods'
 
 export interface Order {
   id: string
@@ -52,9 +53,15 @@ export async function isStaff(): Promise<boolean> {
 // ---------- 订单 ----------
 
 // 创建订单（支付成功后调用），返回含取件码的完整订单
+// 云端创建失败（库存不足/商品下架等）时抛出携带原因的 Error
 export async function createOrder(items: CartItem[], total: number): Promise<Order> {
   if (cloudReady()) {
     const res = await callCloud('order', { action: 'create', items, total })
+    if (res.code === 'CREATE_FAILED') {
+      throw new Error(res.errMsg || '下单失败')
+    }
+    // 下单已扣减库存，失效商品缓存，首页/详情页下次读取拿到新库存
+    invalidateGoodsCache()
     return res.order as Order
   }
   const order: Order = {
@@ -68,6 +75,9 @@ export async function createOrder(items: CartItem[], total: number): Promise<Ord
   }
   const list = (Taro.getStorageSync('mock_orders') as Order[]) || []
   Taro.setStorageSync('mock_orders', [order, ...list])
+  // mock 模式同步扣减本地库存，并失效商品缓存
+  adjustMockStock(items, -1)
+  invalidateGoodsCache()
   return order
 }
 
@@ -103,6 +113,8 @@ export async function cancelOrder(id: string): Promise<boolean> {
   if (!target) return false
   target.status = 'cancelled'
   Taro.setStorageSync('mock_orders', list)
+  // mock 模式回补本地库存
+  adjustMockStock(target.items, 1)
   return true
 }
 

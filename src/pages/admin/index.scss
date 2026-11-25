@@ -187,6 +187,65 @@
     }
   }
 
+  // SKU 库存矩阵（颜色 × 尺码）
+  .stock-matrix {
+    margin-bottom: 20rpx;
+
+    .stock-matrix-title {
+      display: block;
+      font-size: 26rpx;
+      color: var(--color-text-secondary);
+      margin-bottom: 16rpx;
+    }
+
+    .stock-grid {
+      border: 1rpx solid var(--color-border);
+      border-radius: 12rpx;
+      overflow: hidden;
+    }
+
+    .stock-row {
+      display: flex;
+      border-bottom: 1rpx solid var(--color-border);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .stock-cell {
+        flex: 1;
+        min-width: 0;
+        font-size: 24rpx;
+        padding: 16rpx 8rpx;
+        text-align: center;
+        background: var(--color-muted-bg);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &.stock-head-cell {
+          color: var(--color-text-secondary);
+          font-weight: 600;
+        }
+
+        // 颜色列固定宽，尺码列均分剩余宽度（与数据行的输入框 flex:1 对齐）
+        &.stock-color {
+          flex: 0 0 130rpx;
+          color: var(--color-text);
+        }
+      }
+
+      .stock-input {
+        flex: 1;
+        min-width: 0;
+        height: 72rpx;
+        text-align: center;
+        font-size: 24rpx;
+        border-left: 1rpx solid var(--color-border);
+      }
+    }
+  }
+
   .form-btns {
     display: flex;
     gap: 20rpx;
