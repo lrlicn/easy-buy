@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { View, Text, Image, Input, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
-import { listAllOrders, verifyPickup, isStaff, Order } from '../../services/order'
-import { listGoods, saveProduct, deleteProduct, seedGoods, pickAndUploadImage } from '../../services/goods'
-import type { Product } from '../../data/products'
+import { listAllOrders, isStaff, Order } from '../../services/order'
+import { listGoods, saveProduct, deleteProduct, seedGoods, pickAndUploadImage, getShopConfig, saveShopConfig, DEFAULT_SHOP } from '../../services/goods'
+import type { Product, ShopConfig } from '../../services/goods'
 import './index.scss'
 
 // 表单额外暂存价格原文，避免受控输入把 "0." 等中间态清掉
@@ -14,12 +14,12 @@ export default function Admin() {
   const [orders, setOrders] = useState<Order[]>([])
   const [allowed, setAllowed] = useState(false)
   const [checked, setChecked] = useState(false)
-  const [code, setCode] = useState('')
-  const [verifying, setVerifying] = useState(false)
   // 商品管理
-  const [tab, setTab] = useState<'orders' | 'goods'>('orders')
+  const [tab, setTab] = useState<'orders' | 'goods' | 'shop'>('orders')
   const [goods, setGoods] = useState<Product[]>([])
   const [form, setForm] = useState<GoodsForm | null>(null) // null=关闭表单
+  // 门店设置
+  const [shop, setShop] = useState<ShopConfig | null>(null)
 
   useLoad(() => {
     isStaff()
@@ -42,9 +42,10 @@ export default function Admin() {
       .then(setGoods)
       .catch(() => Taro.showToast({ title: '商品加载失败', icon: 'none' }))
 
-  const switchTab = (t: 'orders' | 'goods') => {
+  const switchTab = (t: 'orders' | 'goods' | 'shop') => {
     setTab(t)
     if (t === 'goods' && goods.length === 0) loadGoods()
+    if (t === 'shop') loadShop()
   }
 
   // 选图并上传（微信端传云存储）
@@ -141,49 +142,26 @@ export default function Admin() {
     }
   }
 
-  // 核销逻辑（手输与扫码共用）
-  const doVerify = async (pickupCode: string) => {
-    if (verifying) return
-    setVerifying(true)
-    try {
-      const order = await verifyPickup(pickupCode)
-      if (!order) {
-        Taro.showToast({ title: '取件码无效或已核销', icon: 'none' })
-      } else {
-        Taro.showToast({ title: '核销成功', icon: 'success' })
-        setCode('')
-        await loadOrders()
-      }
-    } finally {
-      setVerifying(false)
+  // ---------- 门店设置 ----------
+  const loadShop = () =>
+    getShopConfig(true)
+      .then(setShop)
+      .catch(() => setShop(DEFAULT_SHOP))
+
+  const handleSaveShop = async () => {
+    if (!shop) return
+    if (!shop.name.trim()) {
+      return Taro.showToast({ title: '请填写门店名称', icon: 'none' })
     }
+    try {
+      await saveShopConfig({ ...shop, name: shop.name.trim() })
+    } catch {
+      return Taro.showToast({ title: '保存失败，请重试', icon: 'none' })
+    }
+    Taro.showToast({ title: '已保存', icon: 'success' })
   }
 
-  // 按取件码核销（手输）
-  const handleVerify = async () => {
-    if (!code.trim()) return
-    await doVerify(code.trim())
-  }
-
-  // 扫顾客出示的取件码二维码核销
-  const handleScanVerify = () => {
-    Taro.scanCode({
-      success: (res) => {
-        const scanned = (res.result || '').trim()
-        if (!/^\d{6}$/.test(scanned)) {
-          return Taro.showToast({ title: '这不是取件码二维码', icon: 'none' })
-        }
-        doVerify(scanned)
-      },
-      fail: (res) => {
-        // 用户主动取消扫码是正常操作，静默处理（框架会打印 cancel 日志，可忽略）
-        const msg = res && res.errMsg ? res.errMsg : ''
-        if (!msg.includes('cancel')) {
-          Taro.showToast({ title: '扫码不可用，可手输取件码核销', icon: 'none' })
-        }
-      }
-    })
-  }
+  // 核销已拆分为独立页面 /pages/admin/verify（商家最高频操作，右下角悬浮按钮直达）
 
   const formatTime = (ts: number) => {
     const d = new Date(ts)
@@ -205,35 +183,11 @@ export default function Admin() {
       <View className='tabs'>
         <View className={`tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => switchTab('orders')}>订单管理</View>
         <View className={`tab ${tab === 'goods' ? 'active' : ''}`} onClick={() => switchTab('goods')}>商品管理</View>
+        <View className={`tab ${tab === 'shop' ? 'active' : ''}`} onClick={() => switchTab('shop')}>门店设置</View>
       </View>
 
       {tab === 'orders' && (
         <View>
-          <View className='panel verify-panel'>
-            <Text className='verify-title'>取件核销</Text>
-            <View className='verify-row'>
-              <Input
-                className='verify-input'
-                type='number'
-                maxlength={6}
-                placeholder='输入买家 6 位取件码'
-                value={code}
-                onInput={e => setCode(e.detail.value)}
-              />
-              <Button className={`btn-primary verify-btn ${code.trim() ? '' : 'disabled'}`} onClick={handleVerify}>
-                {verifying ? '核销中...' : '核销'}
-              </Button>
-            </View>
-            <View className='scan-entry' onClick={handleScanVerify}>
-              <View className='scan-icon' />
-              <View className='scan-texts'>
-                <Text className='scan-title'>扫码核销</Text>
-                <Text className='scan-sub'>对准顾客「我的订单」里的取件码二维码</Text>
-              </View>
-              <Text className='scan-arrow'>›</Text>
-            </View>
-          </View>
-
           <Text className='section-title'>全部订单</Text>
           {orders.length === 0 ? (
             <Text className='tip'>暂无订单</Text>
@@ -367,6 +321,23 @@ export default function Admin() {
           )}
         </View>
       )}
+      {tab === 'shop' && shop && (
+        <View className='panel goods-form'>
+          <Text className='form-title'>门店设置</Text>
+          <Input className='form-input' placeholder='门店名称，如：衣间' value={shop.name} onInput={e => setShop(s => (s ? { ...s, name: e.detail.value } : s))} />
+          <Input className='form-input' placeholder='门店地址（展示给顾客）' value={shop.address} onInput={e => setShop(s => (s ? { ...s, address: e.detail.value } : s))} />
+          <Input className='form-input' placeholder='取货须知，如：支付后凭取件码到店取货' value={shop.notice} onInput={e => setShop(s => (s ? { ...s, notice: e.detail.value } : s))} />
+          <View className='form-btns'>
+            <Button className='btn-primary form-save' onClick={handleSaveShop}>保存</Button>
+          </View>
+          <Text className='form-hint'>保存后：首页店名、支付成功页地址、详情页取货须知即时更新</Text>
+        </View>
+      )}
+
+      {/* 悬浮核销按钮：任何标签页一键直达独立核销页（商家最高频操作） */}
+      <View className='verify-fab' onClick={() => Taro.navigateTo({ url: '/pages/admin/verify/index' })}>
+        <View className='fab-icon' />
+      </View>
     </View>
   )
 }

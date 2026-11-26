@@ -31,6 +31,14 @@
   display: block;
   font-size: 26rpx;
   color: var(--color-text-muted);
+  margin-bottom: 16rpx;
+}
+
+// 门店地址（跟在取货提示后）
+.success-addr {
+  display: block;
+  font-size: 26rpx;
+  color: var(--color-text-muted);
   margin-bottom: 80rpx;
 }
 

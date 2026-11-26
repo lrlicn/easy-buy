@@ -127,3 +127,59 @@ export async function pickAndUploadImage(): Promise<string> {
   }
   return filePath
 }
+
+// ---------- 门店配置 ----------
+
+export interface ShopConfig {
+  name: string // 店名（首页头部）
+  address: string // 门店地址（支付成功页展示）
+  notice: string // 取货须知（详情页服务保障行）
+}
+
+// 云端未配置时的默认值
+export const DEFAULT_SHOP: ShopConfig = {
+  name: '衣间',
+  address: '',
+  notice: '支付后凭取件码到店取货，免运费'
+}
+
+// 门店配置缓存（会话级）
+let shopCache: ShopConfig | null = null
+
+// 拉取门店配置（force=true 强制刷新，商家保存后调用）；失败回退 mock/默认值
+export async function getShopConfig(force = false): Promise<ShopConfig> {
+  if (shopCache && !force) return shopCache
+  if (cloudReady()) {
+    try {
+      const res = await callCloud({ action: 'getShop' })
+      if (res.config) {
+        shopCache = {
+          name: res.config.name || DEFAULT_SHOP.name,
+          address: res.config.address || '',
+          notice: res.config.notice || DEFAULT_SHOP.notice
+        }
+        return shopCache
+      }
+    } catch (e) {
+      console.warn('门店配置加载失败，使用默认', e)
+    }
+  }
+  shopCache = (Taro.getStorageSync('mock_shop') as ShopConfig) || DEFAULT_SHOP
+  return shopCache
+}
+
+// 同步取当前配置（未拉取过时返回默认值，适合页面首帧渲染）
+export function findShopConfig(): ShopConfig {
+  return shopCache || DEFAULT_SHOP
+}
+
+// 保存门店配置（店员操作）
+export async function saveShopConfig(c: ShopConfig): Promise<void> {
+  if (cloudReady()) {
+    await callCloud({ action: 'saveShop', config: c })
+    shopCache = { ...c }
+    return
+  }
+  Taro.setStorageSync('mock_shop', c)
+  shopCache = { ...c }
+}

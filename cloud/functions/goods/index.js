@@ -75,5 +75,27 @@ exports.main = async (event) => {
     return { ok: true }
   }
 
+  // 门店配置：getShop 公开读取 / saveShop 店员保存（固定文档 id=main）
+  if (action === 'getShop') {
+    try {
+      const snap = await db.collection('shop_config').doc('main').get()
+      return { config: snap.data || null }
+    } catch (e) {
+      return { config: null } // 尚未配置过
+    }
+  }
+
+  if (action === 'saveShop') {
+    await assertStaff(OPENID)
+    try {
+      await db.createCollection('shop_config')
+    } catch (e) {
+      // 集合已存在，忽略
+    }
+    const data = { ...event.config, updatedAt: Date.now() }
+    await db.collection('shop_config').doc('main').set({ data })
+    return { ok: true }
+  }
+
   throw new Error('未知 action: ' + action)
 }

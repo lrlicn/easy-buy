@@ -6,6 +6,7 @@ export default defineAppConfig({
     'pages/pay/index',
     'pages/orders/index',
     'pages/admin/index',
+    'pages/admin/verify/index',
     'pages/profile/index'
   ],
   tabBar: {

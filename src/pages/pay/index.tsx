@@ -3,6 +3,7 @@ import { View, Text, Image, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { removeItems, CartItem } from '../../store/cart'
 import { createOrder } from '../../services/order'
+import { getShopConfig, findShopConfig } from '../../services/goods'
 import './index.scss'
 
 export default function Pay() {
@@ -10,9 +11,11 @@ export default function Pay() {
   const [paid, setPaid] = useState(false)
   const [paying, setPaying] = useState(false)
   const [pickupCode, setPickupCode] = useState('')
+  const [shop, setShop] = useState(findShopConfig())
 
   useLoad(() => {
     setOrder(Taro.getStorageSync('pendingOrder') || [])
+    getShopConfig(true).then(setShop).catch(() => {})
   })
 
   const total = order.reduce((s, i) => s + i.price * i.qty, 0)
@@ -48,7 +51,10 @@ export default function Pay() {
           <Text className='pickup-label'>取件码</Text>
           <Text className='pickup-code'>{pickupCode}</Text>
         </View>
-        <Text className='success-tip'>请凭取件码到门店柜台取货</Text>
+        <Text className='success-tip'>请凭取件码到{shop.name}柜台取货</Text>
+        {shop.address && (
+          <Text className='success-addr'>门店地址：{shop.address}</Text>
+        )}
         <Button className='btn-primary home-btn' onClick={backHome}>返回首页</Button>
         <Button className='orders-btn' onClick={goOrders}>查看我的订单</Button>
       </View>
@@ -58,7 +64,7 @@ export default function Pay() {
   return (
     <View className='page'>
       <View className='panel'>
-        <View className='pickup'>门店自提 · 衣间（XX路店）</View>
+        <View className='pickup'>门店自提 · {shop.name}{shop.address ? `（${shop.address}）` : ''}</View>
         {order.map(i => (
           <View key={i.key} className='row'>
             <Image className='row-img' src={i.image} mode='aspectFill' />

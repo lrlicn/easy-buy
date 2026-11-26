@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Image, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { getProductById } from '../../services/goods'
+import { getProductById, getShopConfig, findShopConfig } from '../../services/goods'
 import type { Product } from '../../data/products'
 import { addToCart, useCart } from '../../store/cart'
 import './index.scss'
@@ -18,12 +18,16 @@ export default function Detail() {
   const [size, setSize] = useState('')
   const cartItems = useCart()
   const cartCount = cartItems.reduce((s, i) => s + i.qty, 0)
+  const [shop, setShop] = useState(findShopConfig())
 
   // 商品异步加载：缓存未命中时会强制拉取云端（扫码冷启动场景）
   useEffect(() => {
     let alive = true
     getProductById(id).then(p => {
       if (alive) setProduct(p ?? undefined)
+    })
+    getShopConfig().then(s => {
+      if (alive) setShop(s)
     })
     return () => {
       alive = false
@@ -112,7 +116,7 @@ export default function Detail() {
         {/* 服务保障行：讲清自提流程（对应京东"自营品质"信任区） */}
         <View className='service-row'>
           <Text className='service-tag'>门店自提</Text>
-          <Text className='service-text'>支付后凭取件码到店取货，免运费</Text>
+          <Text className='service-text'>{shop.notice || '支付后凭取件码到店取货，免运费'}</Text>
         </View>
       </View>
 

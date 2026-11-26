@@ -13,6 +13,7 @@ export interface Order {
   pickupCode: string // 6 位取件码，到店核销
   status: 'paid' | 'completed' | 'cancelled' // paid=待取件 completed=已核销 cancelled=已取消
   createdAt: number
+  completedAt?: number // 核销完成时间（商家端"今日已核销"按此过滤）
 }
 
 // 微信端且配置了云环境才启用真实云端
@@ -133,9 +134,13 @@ export async function deleteOrder(id: string): Promise<boolean> {
 }
 
 // 商家：按取件码核销，成功返回核销后的订单，未找到返回 null
+// 云端限流（连错锁定）或码无效时抛出携带原因的 Error
 export async function verifyPickup(pickupCode: string): Promise<Order | null> {
   if (cloudReady()) {
     const res = await callCloud('order', { action: 'verifyPickup', pickupCode })
+    if (res.code === 'LOCKED' || res.code === 'NOT_FOUND') {
+      throw new Error(res.errMsg || '核销失败')
+    }
     return (res.order as Order) || null
   }
   const code = pickupCode.trim()
@@ -143,6 +148,7 @@ export async function verifyPickup(pickupCode: string): Promise<Order | null> {
   const target = list.find(o => o.pickupCode === code && o.status === 'paid')
   if (!target) return null
   target.status = 'completed'
+  target.completedAt = Date.now()
   Taro.setStorageSync('mock_orders', list)
   return target
 }

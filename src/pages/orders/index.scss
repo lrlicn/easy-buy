@@ -165,6 +165,14 @@
     margin-top: 8rpx;
   }
 
+  // 门店地址（顾客到店取件时顺手确认门店）
+  .qm-shop {
+    display: block;
+    font-size: 24rpx;
+    color: var(--color-text-secondary);
+    margin-top: 16rpx;
+  }
+
   .qm-close {
     margin-top: 32rpx !important;
     width: 320rpx !important;

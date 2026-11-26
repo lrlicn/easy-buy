@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, Text, Image, Button, Canvas } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { listMyOrders, cancelOrder, deleteOrder, Order } from '../../services/order'
+import { getShopConfig, findShopConfig } from '../../services/goods'
 import { drawQr, rpxToPx } from '../../utils/qrcode'
 import './index.scss'
 
@@ -15,12 +16,14 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [qrOrder, setQrOrder] = useState<Order | null>(null) // 弹层中出示二维码的订单
+  const [shop, setShop] = useState(findShopConfig())
 
   useLoad(() => {
     listMyOrders()
       .then(setOrders)
       .catch(() => Taro.showToast({ title: '订单加载失败', icon: 'none' }))
       .finally(() => setLoading(false))
+    getShopConfig().then(setShop).catch(() => {})
   })
 
   // 弹层打开后绘制取件码二维码（等 canvas 渲染完成）
@@ -135,6 +138,7 @@ export default function Orders() {
             />
             <Text className='qm-code'>{qrOrder.pickupCode}</Text>
             <Text className='qm-tip'>向店员出示此二维码完成核销</Text>
+            {shop.address && <Text className='qm-shop'>门店地址：{shop.name} · {shop.address}</Text>}
             <Button className='qm-close' onClick={() => setQrOrder(null)}>关闭</Button>
           </View>
         </View>

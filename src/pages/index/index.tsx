@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Image, Button, ScrollView } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
-import { listGoods, findProduct } from '../../services/goods'
+import { listGoods, findProduct, getShopConfig, findShopConfig } from '../../services/goods'
 import type { Product } from '../../data/products'
 import './index.scss'
 
@@ -9,6 +9,7 @@ const TAG_TEXT: Record<string, string> = { hot: '热销', new: '新品' }
 
 export default function Index() {
   const [goods, setGoods] = useState<Product[]>([])
+  const [shop, setShop] = useState(findShopConfig())
 
   // 首次进入拉取商品（云端优先，失败回退内置数据）
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function Index() {
   // 首页是 tabBar 常驻页：每次切回都刷新（下单扣库存/商家改商品后回到首页能看到最新数据）
   useDidShow(() => {
     listGoods().then(setGoods).catch(() => {})
+    getShopConfig(true).then(setShop).catch(() => {})
   })
 
   // 推荐条：优先显示打了运营标签的商品，没有标签则取前 4 件
@@ -50,7 +52,7 @@ export default function Index() {
   return (
     <View className='page'>
       <View className='header'>
-        <View className='shop-name'>衣间 · 门店自选</View>
+        <View className='shop-name'>{shop.name} · 门店自选</View>
         <View className='scan-entry' onClick={handleScan} />
       </View>
 

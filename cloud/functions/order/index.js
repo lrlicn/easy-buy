@@ -133,11 +133,49 @@ exports.main = async (event) => {
 
   if (action === 'verifyPickup') {
     await assertStaff(OPENID)
+    // 防暴力猜测：6 位取件码可被穷举，同一店员连错 5 次锁定 10 分钟
+    const MAX_FAILS = 5
+    const LOCK_MS = 10 * 60 * 1000
+    try {
+      await db.createCollection('rate_limits')
+    } catch (e) {
+      // 集合已存在，忽略
+    }
+    const now = Date.now()
+    let limit = { fails: 0, lockedUntil: 0 }
+    try {
+      const snap = await db.collection('rate_limits').doc(`verify_${OPENID}`).get()
+      limit = { fails: snap.data.fails || 0, lockedUntil: snap.data.lockedUntil || 0 }
+    } catch (e) {
+      // 首次核销，无记录
+    }
+    if (limit.lockedUntil > now) {
+      const mins = Math.ceil((limit.lockedUntil - now) / 60000)
+      return { code: 'LOCKED', errMsg: `核销失败次数过多，请 ${mins} 分钟后再试` }
+    }
+
     const found = await db.collection('orders')
       .where({ pickupCode, status: 'paid' })
       .get()
     if (!found.data.length) {
-      return { order: null }
+      const fails = limit.fails + 1
+      const locked = fails >= MAX_FAILS
+      await db.collection('rate_limits').doc(`verify_${OPENID}`).set({
+        data: { openid: OPENID, fails: locked ? 0 : fails, lockedUntil: locked ? now + LOCK_MS : 0, updatedAt: now }
+      })
+      return {
+        code: 'NOT_FOUND',
+        errMsg: locked
+          ? `连续 ${MAX_FAILS} 次核销失败，已锁定 10 分钟`
+          : `取件码无效（连续错误 ${fails}/${MAX_FAILS} 次）`
+      }
+    }
+
+    // 核销成功：清空失败计数
+    if (limit.fails > 0 || limit.lockedUntil > 0) {
+      await db.collection('rate_limits').doc(`verify_${OPENID}`).set({
+        data: { openid: OPENID, fails: 0, lockedUntil: 0, updatedAt: now }
+      })
     }
     const doc = found.data[0]
     await db.collection('orders').doc(doc._id).update({
