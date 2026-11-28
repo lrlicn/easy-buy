@@ -1,11 +1,14 @@
 import { View, Text, Image, Button } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import { useCart, changeQty, removeItem, cartCount } from '../../store/cart'
+import { syncTabBar } from '../../utils/tabbar'
 import './index.scss'
 
 export default function Cart() {
   const items = useCart()
+  // 微信端自定义 tabBar 覆盖在页面之上，固定底元素需抬高避让（H5 用 --window-bottom 即可）
+  const isWeapp = process.env.TARO_ENV === 'weapp'
   // 已勾选结算的行 key 集合（仅页面内存，进入购物车默认全选）
   const [selected, setSelected] = useState<string[] | null>(null)
 
@@ -15,6 +18,9 @@ export default function Cart() {
     selected === null ? keys : selected.filter(k => keys.includes(k))
   const selectedItems = items.filter(i => selectedKeys.includes(i.key))
   const allSelected = keys.length > 0 && selectedKeys.length === keys.length
+
+  // 自定义 tabBar 选中态同步
+  useDidShow(() => syncTabBar(1))
 
   // 同步勾选状态（null 时展开为全选）
   const setSelectedKeys = (next: string[]) => setSelected(next)
@@ -46,7 +52,7 @@ export default function Cart() {
     .toFixed(2)
 
   return (
-    <View className='page'>
+    <View className={`page ${isWeapp ? 'page-weapp' : ''}`}>
       {items.length === 0 ? (
         <View className='empty'>
           <Text>购物车是空的，去挑一件吧</Text>

@@ -5,10 +5,64 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// 订阅消息配置（模板：预约提醒，模板编号 8720，个人主体借用通用模板）
+// 关键词编号以 mp 后台「我的模板 → 模板详情」展示的 {{xx.DATA}} 为准，若后台换模板需同步修改
+const SUBSCRIBE_TEMPLATE_ID = 'yvAdCkOg8vHPCQklmeZAKAoZt2B5uxrb-DKwGp_6LSs'
+const SUBSCRIBE_PAGE = 'pages/admin/verify/index'
+const SUBSCRIBE_KEYS = {
+  code: 'character_string32', // 预约编号 → 订单号
+  items: 'thing2',            // 预约项目 → 商品 × 数量
+  time: 'time3',              // 预约时间 → 下单时间
+  shop: 'thing10',            // 预约门店 → 店名
+  tip: 'thing4'               // 温馨提示 → 金额 + 核销提示
+}
+
 async function assertStaff(openid) {
   const res = await db.collection('staff').where({ openid }).count()
   if (res.total === 0) {
     throw new Error('无商家权限')
+  }
+}
+
+// 订阅消息字段：thing 类型最长 20 字且不能纯数字，超长截断
+const clip = (s, n = 20) => String(s).slice(0, n)
+
+// 下单后给所有店员发订阅消息（一次性订阅：店员需先在小程序端授权，43101=未授权跳过）
+// 发送失败只记日志，不阻塞下单
+async function notifyStaff(order) {
+  let staffRes
+  try {
+    staffRes = await db.collection('staff').get()
+  } catch (e) {
+    console.warn('订阅消息：staff 集合读取失败', e.errMsg || e.message)
+    return
+  }
+  // 云函数容器为 UTC 时区，getHours 会少 8 小时；手动偏移到北京时间再取字段
+  const d = new Date(order.createdAt + 8 * 3600 * 1000)
+  const pad = (n) => String(n).padStart(2, '0')
+  const timeText = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const itemsText = order.items.map(i => `${i.name}×${i.qty}`).join('；')
+  const data = {
+    [SUBSCRIBE_KEYS.code]: { value: clip(String(order.pickupCode), 32) },
+    [SUBSCRIBE_KEYS.items]: { value: clip(itemsText) },
+    [SUBSCRIBE_KEYS.time]: { value: timeText },
+    [SUBSCRIBE_KEYS.shop]: { value: clip('衣码购 门店自提') },
+    [SUBSCRIBE_KEYS.tip]: { value: clip(`顾客已付${order.total}元,请备货核销`) }
+  }
+  for (const staff of staffRes.data) {
+    try {
+      await cloud.openapi.subscribeMessage.send({
+        touser: staff.openid,
+        templateId: SUBSCRIBE_TEMPLATE_ID,
+        page: SUBSCRIBE_PAGE,
+        data
+      })
+    } catch (e) {
+      // 43101=该用户未订阅/授权次数已用完，属正常情况，静默跳过
+      if (e.errCode !== 43101) {
+        console.warn('订阅消息发送失败', staff.openid, e.errCode, e.errMsg)
+      }
+    }
   }
 }
 
@@ -101,6 +155,8 @@ exports.main = async (event) => {
       }
       const res = await transaction.collection('orders').add({ data: order })
       await transaction.commit()
+      // 通知店员（不阻塞下单结果，失败仅记日志）
+      await notifyStaff({ ...order, _id: res._id })
       return { order: toOrder({ ...order, _id: res._id }) }
     } catch (e) {
       console.error('创建订单失败:', e.errMsg || e.message || e)
@@ -124,11 +180,19 @@ exports.main = async (event) => {
 
   if (action === 'listAll') {
     await assertStaff(OPENID)
-    const res = await db.collection('orders')
+    // 订单量增长后商家按状态分标签查看：服务端过滤 + 分页，避免一次拉全量
+    const PAGE_SIZE = 20
+    const _ = db.command
+    let query = db.collection('orders')
+    if (Array.isArray(event.statuses) && event.statuses.length > 0) {
+      query = query.where({ status: _.in(event.statuses) })
+    }
+    const res = await query
       .orderBy('createdAt', 'desc')
-      .limit(100)
+      .skip(event.skip || 0)
+      .limit(PAGE_SIZE)
       .get()
-    return { list: res.data.map(toOrder) }
+    return { list: res.data.map(toOrder), hasMore: res.data.length === PAGE_SIZE }
   }
 
   if (action === 'verifyPickup') {
@@ -184,19 +248,39 @@ exports.main = async (event) => {
     return { order: toOrder({ ...doc, status: 'completed' }) }
   }
 
-  if (action === 'cancel') {
-    // 买家取消自己的待取件订单，成功后回补库存
+  if (action === 'requestRefund') {
+    // 顾客对已付款订单发起退款申请（状态流转版：真实支付接入后在此处对接原路退款）
     const found = await db.collection('orders')
       .where({ _id: event.id, openid: OPENID, status: 'paid' })
       .get()
     if (!found.data.length) {
       return { ok: false }
     }
+    await db.collection('orders').doc(event.id).update({
+      data: { status: 'refund_requested', refundRequestedAt: Date.now() }
+    })
+    return { ok: true }
+  }
+
+  if (action === 'handleRefund') {
+    // 商家处理退款申请：同意 → refunded 终态并回补库存；拒绝 → 回 paid（可核销/可再次申请）
+    await assertStaff(OPENID)
+    const approve = event.approve === true
+    const found = await db.collection('orders')
+      .where({ _id: event.id, status: 'refund_requested' })
+      .get()
+    if (!found.data.length) {
+      return { ok: false }
+    }
     const doc = found.data[0]
     await db.collection('orders').doc(event.id).update({
-      data: { status: 'cancelled', cancelledAt: Date.now() }
+      data: approve
+        ? { status: 'refunded', refundedAt: Date.now() }
+        : { status: 'paid', refundRejectedAt: Date.now() }
     })
-    await restock(doc.items)
+    if (approve) {
+      await restock(doc.items)
+    }
     return { ok: true }
   }
 

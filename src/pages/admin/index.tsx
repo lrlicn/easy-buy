@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, Image, Input, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
-import { listAllOrders, isStaff, Order } from '../../services/order'
+import { listAllOrders, handleRefund, isStaff, Order } from '../../services/order'
 import { listGoods, saveProduct, deleteProduct, seedGoods, pickAndUploadImage, getShopConfig, saveShopConfig, DEFAULT_SHOP } from '../../services/goods'
 import type { Product, ShopConfig } from '../../services/goods'
 import './index.scss'
@@ -11,6 +11,8 @@ type GoodsForm = Product & { priceText: string }
 const emptyForm: GoodsForm = { id: '', name: '', price: 0, image: '', colors: [], sizes: [], desc: '', priceText: '' }
 
 export default function Admin() {
+  // 微信端自定义 tabBar 覆盖在页面之上，悬浮按钮和底部内容需避让（H5 用 --window-bottom 即可）
+  const isWeapp = process.env.TARO_ENV === 'weapp'
   const [orders, setOrders] = useState<Order[]>([])
   const [allowed, setAllowed] = useState(false)
   const [checked, setChecked] = useState(false)
@@ -18,8 +20,24 @@ export default function Admin() {
   const [tab, setTab] = useState<'orders' | 'goods' | 'shop'>('orders')
   const [goods, setGoods] = useState<Product[]>([])
   const [form, setForm] = useState<GoodsForm | null>(null) // null=关闭表单
+  // 订单筛选与分页：默认"待处理"，商家打开页面第一眼只看需要动作的订单
+  const [orderFilter, setOrderFilter] = useState('pending')
+  const [hasMore, setHasMore] = useState(false)
   // 门店设置
   const [shop, setShop] = useState<ShopConfig | null>(null)
+  const [shopSaved, setShopSaved] = useState<ShopConfig | null>(null) // 最近一次保存/加载的快照，用于检测未保存修改
+  const [shopFlash, setShopFlash] = useState(false) // 保存成功后短暂显示"已保存"
+
+  // 订单筛选标签：statuses 对应云函数 _.in 过滤
+  const ORDER_FILTERS: { key: string; label: string; statuses: Order['status'][] }[] = [
+    { key: 'pending', label: '待处理', statuses: ['paid', 'refund_requested'] },
+    { key: 'refunding', label: '退款申请', statuses: ['refund_requested'] },
+    { key: 'done', label: '已完成', statuses: ['completed'] },
+    { key: 'refunded', label: '已退款', statuses: ['refunded'] },
+    { key: 'cancelled', label: '已取消', statuses: ['cancelled'] },
+    { key: 'all', label: '全部', statuses: [] }
+  ]
+  const PAGE_SIZE = 20
 
   useLoad(() => {
     isStaff()
@@ -31,10 +49,16 @@ export default function Admin() {
       .finally(() => setChecked(true))
   })
 
-  const loadOrders = () =>
-    listAllOrders()
-      .then(setOrders)
+  // 按当前筛选标签拉取订单（replace=true 重新加载第一页）
+  const loadOrders = (statuses: Order['status'][] = filterStatuses, replace = true) =>
+    listAllOrders(statuses, replace ? 0 : orders.length)
+      .then(res => {
+        setOrders(prev => (replace ? res.list : [...prev, ...res.list]))
+        setHasMore(res.hasMore)
+      })
       .catch(() => Taro.showToast({ title: '订单加载失败', icon: 'none' }))
+
+  const filterStatuses = ORDER_FILTERS.find(f => f.key === orderFilter)?.statuses || []
 
   // ---------- 商品管理 ----------
   const loadGoods = () =>
@@ -44,7 +68,9 @@ export default function Admin() {
 
   const switchTab = (t: 'orders' | 'goods' | 'shop') => {
     setTab(t)
-    if (t === 'goods' && goods.length === 0) loadGoods()
+    if (t === 'orders') loadOrders()
+    // 商品库存会被下单/退款等操作改变，每次切入都强制拉最新
+    if (t === 'goods') loadGoods()
     if (t === 'shop') loadShop()
   }
 
@@ -145,7 +171,10 @@ export default function Admin() {
   // ---------- 门店设置 ----------
   const loadShop = () =>
     getShopConfig(true)
-      .then(setShop)
+      .then(s => {
+        setShop(s)
+        setShopSaved(s)
+      })
       .catch(() => setShop(DEFAULT_SHOP))
 
   const handleSaveShop = async () => {
@@ -158,10 +187,38 @@ export default function Admin() {
     } catch {
       return Taro.showToast({ title: '保存失败，请重试', icon: 'none' })
     }
+    // 内联反馈：按钮短暂显示"已保存"，比一闪而过的 toast 更明确
+    setShopSaved({ ...shop, name: shop.name.trim() })
+    setShopFlash(true)
     Taro.showToast({ title: '已保存', icon: 'success' })
+    setTimeout(() => setShopFlash(false), 2000)
   }
 
+  // 是否有未保存的修改（与最近一次保存的快照对比）
+  const shopDirty =
+    !!shop && !!shopSaved && JSON.stringify(shop) !== JSON.stringify(shopSaved)
+
   // 核销已拆分为独立页面 /pages/admin/verify（商家最高频操作，右下角悬浮按钮直达）
+
+  // 处理顾客退款申请：同意 → 退款+回补库存；拒绝 → 回待取件
+  const handleRefundRequest = (o: Order, approve: boolean) => {
+    Taro.showModal({
+      title: approve ? '同意退款' : '拒绝退款',
+      content: approve
+        ? `同意订单 ${o.pickupCode} 的退款申请（¥${o.total}）？库存将回补。`
+        : `拒绝订单 ${o.pickupCode} 的退款申请？订单恢复为待取件。`,
+      success: async (res) => {
+        if (!res.confirm) return
+        const ok = await handleRefund(o.id, approve)
+        if (ok) {
+          Taro.showToast({ title: approve ? '已退款' : '已拒绝', icon: 'success' })
+          loadOrders()
+        } else {
+          Taro.showToast({ title: '操作失败，订单状态已变化', icon: 'none' })
+        }
+      }
+    })
+  }
 
   const formatTime = (ts: number) => {
     const d = new Date(ts)
@@ -178,7 +235,7 @@ export default function Admin() {
   }
 
   return (
-    <View className='page'>
+    <View className={`page ${isWeapp ? 'page-weapp' : ''}`}>
       {/* 顶部标签切换 */}
       <View className='tabs'>
         <View className={`tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => switchTab('orders')}>订单管理</View>
@@ -188,20 +245,35 @@ export default function Admin() {
 
       {tab === 'orders' && (
         <View>
-          <Text className='section-title'>全部订单</Text>
+          {/* 状态筛选：默认"待处理"，订单量大时商家只看需要动作的部分 */}
+          <View className='order-filters'>
+            {ORDER_FILTERS.map(f => (
+              <Text
+                key={f.key}
+                className={`order-filter-chip ${orderFilter === f.key ? 'active' : ''}`}
+                onClick={() => {
+                  setOrderFilter(f.key)
+                  loadOrders(f.statuses)
+                }}
+              >{f.label}</Text>
+            ))}
+          </View>
           {orders.length === 0 ? (
             <Text className='tip'>暂无订单</Text>
           ) : (
             orders.map(o => (
-              <View key={o.id} className='panel'>
+              <View key={o.id} className={`panel ${o.status === 'refund_requested' ? 'refund-flag' : ''}`}>
                 <View className='head'>
                   <View className='head-left'>
                     <Text className='time'>{formatTime(o.createdAt)}</Text>
                     {/* openid 后 6 位标识顾客；真实模式可再叠加昵称/手机号 */}
                     <Text className='customer'>顾客 {o.openid.slice(-6)}</Text>
                   </View>
-                  <Text className={`status ${o.status !== 'paid' ? o.status === 'completed' ? 'done' : 'cancelled' : ''}`}>
-                    {o.status === 'completed' ? '已完成' : o.status === 'cancelled' ? '已取消' : '待取件'}
+                  <Text className={`status ${o.status === 'completed' || o.status === 'refunded' ? 'done' : o.status === 'refund_requested' ? 'refunding' : o.status === 'cancelled' ? 'cancelled' : ''}`}>
+                    {o.status === 'completed' ? '已完成'
+                      : o.status === 'refund_requested' ? '退款申请中'
+                      : o.status === 'refunded' ? '已退款'
+                      : o.status === 'cancelled' ? '已取消' : '待取件'}
                   </Text>
                 </View>
                 {o.items.map(i => (
@@ -218,8 +290,18 @@ export default function Admin() {
                   <Text className='total'>合计 ¥{o.total}</Text>
                   <Text className='code'>取件码 {o.pickupCode}</Text>
                 </View>
+                {/* 退款申请处理：顾客申请后需商家二选一 */}
+                {o.status === 'refund_requested' && (
+                  <View className='refund-ops'>
+                    <Button className='refund-btn reject' onClick={() => handleRefundRequest(o, false)}>拒绝</Button>
+                    <Button className='refund-btn approve' onClick={() => handleRefundRequest(o, true)}>同意退款</Button>
+                  </View>
+                )}
               </View>
             ))
+          )}
+          {hasMore && (
+            <Button className='load-more' onClick={() => loadOrders(filterStatuses, false)}>加载更多</Button>
           )}
         </View>
       )}
@@ -324,18 +406,24 @@ export default function Admin() {
       {tab === 'shop' && shop && (
         <View className='panel goods-form'>
           <Text className='form-title'>门店设置</Text>
-          <Input className='form-input' placeholder='门店名称，如：衣间' value={shop.name} onInput={e => setShop(s => (s ? { ...s, name: e.detail.value } : s))} />
+          <Input className='form-input' placeholder='门店名称，如：衣码购' value={shop.name} onInput={e => setShop(s => (s ? { ...s, name: e.detail.value } : s))} />
           <Input className='form-input' placeholder='门店地址（展示给顾客）' value={shop.address} onInput={e => setShop(s => (s ? { ...s, address: e.detail.value } : s))} />
           <Input className='form-input' placeholder='取货须知，如：支付后凭取件码到店取货' value={shop.notice} onInput={e => setShop(s => (s ? { ...s, notice: e.detail.value } : s))} />
+          <Text className='form-hint'>保存后：首页店名、支付页地址、详情页取货须知即时更新</Text>
           <View className='form-btns'>
-            <Button className='btn-primary form-save' onClick={handleSaveShop}>保存</Button>
+            {shopFlash ? (
+              <Button className='form-save saved' disabled>✓ 已保存</Button>
+            ) : shopDirty ? (
+              <Button className='btn-primary form-save' onClick={handleSaveShop}>保存更改</Button>
+            ) : (
+              <Button className='form-save idle' disabled>暂无修改</Button>
+            )}
           </View>
-          <Text className='form-hint'>保存后：首页店名、支付成功页地址、详情页取货须知即时更新</Text>
         </View>
       )}
 
       {/* 悬浮核销按钮：任何标签页一键直达独立核销页（商家最高频操作） */}
-      <View className='verify-fab' onClick={() => Taro.navigateTo({ url: '/pages/admin/verify/index' })}>
+      <View className='verify-fab' onClick={() => Taro.switchTab({ url: '/pages/admin/verify/index' })}>
         <View className='fab-icon' />
       </View>
     </View>

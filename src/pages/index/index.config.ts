@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: '门店扫码购'
+  navigationBarTitleText: '衣码购'
 })

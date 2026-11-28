@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { View, Text } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import { isStaff } from '../../services/order'
+import { syncTabBar } from '../../utils/tabbar'
 import './index.scss'
 
 export default function Profile() {
   const [staff, setStaff] = useState(false)
+
+  // 自定义 tabBar 选中态同步
+  useDidShow(() => syncTabBar(3))
 
   // 店员身份判定（无感登录，失败不阻塞页面）
   useEffect(() => {

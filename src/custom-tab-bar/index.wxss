@@ -1,0 +1,39 @@
+/* 自定义 tabBar 样式（原生 wxss，直通 dist）
+   说明：Taro 对 custom-tab-bar 组件条目不会生成 wxss（样式提取缺失），
+   故此文件通过 config/index.ts 的 copy 配置原样复制到 dist/custom-tab-bar/index.wxss */
+.ctab {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: #ffffff;
+  border-top: 1rpx solid #e5e5e5;
+  /* 适配 iPhone 底部安全区 */
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 999;
+}
+
+.ctab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12rpx 0 8rpx;
+}
+
+.ctab-icon {
+  width: 52rpx;
+  height: 52rpx;
+}
+
+.ctab-text {
+  font-size: 20rpx;
+  color: #999999;
+  margin-top: 4rpx;
+}
+
+.ctab-text.active {
+  color: #1a1a1a;
+  font-weight: 500;
+}

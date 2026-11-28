@@ -16,7 +16,8 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
       828: 1.81 / 2
     },
     sourceRoot: 'src',
-    outputRoot: 'dist',
+    // H5 构建输出到独立目录，避免清空/污染微信小程序端的 dist/（开发者工具以 dist/ 为 miniprogramRoot）
+    outputRoot: process.env.TARO_ENV === 'h5' ? 'dist-h5' : 'dist',
     plugins: [
       "@tarojs/plugin-generator"
     ],
@@ -24,6 +25,8 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
     },
     copy: {
       patterns: [
+        // 自定义 tabBar 的样式 Taro 不会自动生成 wxss，用原生 wxss 直通产物
+        { from: 'src/custom-tab-bar/index.wxss', to: 'dist/custom-tab-bar/index.wxss' }
       ],
       options: {
       }

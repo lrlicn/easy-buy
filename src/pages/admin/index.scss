@@ -2,6 +2,16 @@
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
+
+  // 微信端自定义 tabBar 高约 110rpx 且叠加在页面之上：
+  // 悬浮核销按钮抬到 tabBar 之上，底部内容多留 tabBar + 安全区余量
+  &.page-weapp {
+    padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+
+    .verify-fab {
+      bottom: calc(150rpx + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 .tip {
@@ -281,6 +291,18 @@
       font-size: 28rpx;
       margin: 0;
       padding: 0;
+
+      // 无修改/已保存状态：置灰不可点，让"存没存上"一目了然
+      &.idle {
+        background: var(--color-muted-bg);
+        color: var(--color-text-muted);
+      }
+
+      // 保存成功瞬间：绿色确认态，2 秒后恢复
+      &.saved {
+        background: #0a8f4c;
+        color: #fff;
+      }
     }
   }
 }
@@ -355,6 +377,94 @@
 
     &.cancelled {
       color: #bbb;
+    }
+
+    // 退款申请中：橙色提醒商家处理
+    &.refunding {
+      color: #e67f22;
+    }
+  }
+}
+
+// 含退款申请的订单卡片：橙色描边引起注意
+.refund-flag {
+  border: 1rpx solid #e67f22;
+}
+
+// 订单状态筛选标签（横向滚动，订单状态种类增多时也不挤）
+.order-filters {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  overflow-x: auto;
+
+  .order-filter-chip {
+    flex-shrink: 0;
+    font-size: 26rpx;
+    color: var(--color-text-secondary);
+    background: #fff;
+    border: 1rpx solid var(--color-border);
+    border-radius: 999rpx;
+    padding: 12rpx 32rpx;
+
+    &.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
+// 分页加载更多
+.load-more {
+  width: 100%;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  background: #fff;
+  border: 1rpx solid var(--color-border);
+  border-radius: 12rpx;
+  margin: 8rpx 0 40rpx;
+  padding: 0;
+
+  &::after {
+    border: none;
+  }
+}
+
+// 退款处理操作行
+.refund-ops {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20rpx;
+  margin-top: 20rpx;
+
+  .refund-btn {
+    min-width: 180rpx;
+    height: 60rpx;
+    line-height: 60rpx;
+    font-size: 26rpx;
+    margin: 0;
+    padding: 0;
+    border-radius: 999rpx;
+
+    &::after {
+      border: none;
+    }
+
+    // 拒绝：描边按钮
+    &.reject {
+      color: var(--color-text-secondary);
+      background: #fff;
+      border: 1rpx solid var(--color-border);
+    }
+
+    // 同意退款：实心黑
+    &.approve {
+      color: #fff;
+      background: var(--color-primary);
     }
   }
 }

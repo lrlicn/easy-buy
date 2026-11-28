@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { View, Text, Image, Input, Button } from '@tarojs/components'
 import Taro, { useLoad, useDidShow } from '@tarojs/taro'
 import { listAllOrders, verifyPickup, isStaff, Order } from '../../../services/order'
+import { SUBSCRIBE_TEMPLATE_ID } from '../../../config'
+import { syncTabBar } from '../../../utils/tabbar'
 import './index.scss'
 
 export default function Verify() {
+  // 微信端自定义 tabBar 叠加在页面之上，底部内容需留出避让空间
+  const isWeapp = process.env.TARO_ENV === 'weapp'
   const [allowed, setAllowed] = useState(false)
   const [checked, setChecked] = useState(false)
   const [code, setCode] = useState('')
@@ -33,6 +37,7 @@ export default function Verify() {
 
   // 从别处回到本页时刷新今日数据（如核销成功后跳出去再回来）
   useDidShow(() => {
+    syncTabBar(2)
     if (allowed) loadToday()
   })
 
@@ -83,6 +88,26 @@ export default function Verify() {
     })
   }
 
+  // 开启新订单微信提醒（一次性订阅：每授权一次可收一条，可连点囤授权次数）
+  const handleSubscribe = () => {
+    if (process.env.TARO_ENV !== 'weapp') {
+      return Taro.showToast({ title: '请在微信小程序中使用', icon: 'none' })
+    }
+    Taro.requestSubscribeMessage({
+      tmplIds: [SUBSCRIBE_TEMPLATE_ID],
+      success: (res) => {
+        if (res[SUBSCRIBE_TEMPLATE_ID] === 'accept') {
+          Taro.showToast({ title: '已开启，可多点几次囤提醒', icon: 'success' })
+        } else {
+          Taro.showToast({ title: '已拒绝，点此可重新开启', icon: 'none' })
+        }
+      },
+      fail: () => {
+        Taro.showToast({ title: '订阅失败，请重试', icon: 'none' })
+      }
+    })
+  }
+
   const formatTime = (ts: number) => {
     const d = new Date(ts)
     const pad = (n: number) => String(n).padStart(2, '0')
@@ -102,7 +127,7 @@ export default function Verify() {
   }
 
   return (
-    <View className='page'>
+    <View className={`page ${isWeapp ? 'page-weapp' : ''}`}>
       {/* 主路径：扫码核销 */}
       <View className='scan-hero' onClick={handleScan}>
         <View className='hero-icon' />
@@ -123,6 +148,16 @@ export default function Verify() {
         <Button className={`btn-primary manual-btn ${code.trim() ? '' : 'disabled'}`} onClick={handleVerify}>
           核销
         </Button>
+      </View>
+
+      {/* 新订单微信提醒（一次性订阅，可连点囤授权） */}
+      <View className='sub-entry' onClick={handleSubscribe}>
+        <View className='sub-icon' />
+        <View className='sub-texts'>
+          <Text className='sub-title'>新订单提醒</Text>
+          <Text className='sub-tip'>开启后顾客下单会微信通知；每次点击可囤 1 条提醒额度</Text>
+        </View>
+        <Text className='sub-arrow'>›</Text>
       </View>
 
       {/* 刚核销成功的订单结果卡 */}

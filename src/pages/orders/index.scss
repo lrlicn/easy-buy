@@ -35,7 +35,7 @@
     color: var(--color-price);
     font-weight: 600;
 
-    // 已核销状态
+    // 已核销/已退款状态
     &.done {
       color: var(--color-text-muted);
     }
@@ -43,6 +43,11 @@
     // 已取消状态
     &.cancelled {
       color: #bbb;
+    }
+
+    // 退款申请中状态
+    &.refunding {
+      color: #e67f22;
     }
   }
 }
@@ -193,7 +198,14 @@
 .actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   margin-top: 20rpx;
+
+  // 退款申请处理中的等待提示
+  .refund-waiting {
+    font-size: 24rpx;
+    color: #e67f22;
+  }
 
   .action-btn {
     min-width: 180rpx;

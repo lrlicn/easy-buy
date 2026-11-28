@@ -4,6 +4,16 @@
   // 底部操作栏 128rpx + tabBar（H5 端约 50px≈100rpx）的余量
   padding-bottom: 280rpx;
   box-sizing: border-box;
+
+  // 微信端自定义 tabBar 高约 110rpx 且叠加在页面之上：
+  // 结算栏抬高到 tabBar 之上，底部多留 tabBar + 安全区余量
+  &.page-weapp {
+    padding-bottom: calc(340rpx + env(safe-area-inset-bottom));
+
+    .footer {
+      bottom: calc(110rpx + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 .empty {

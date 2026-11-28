@@ -138,7 +138,7 @@ export interface ShopConfig {
 
 // 云端未配置时的默认值
 export const DEFAULT_SHOP: ShopConfig = {
-  name: '衣间',
+  name: '衣码购',
   address: '',
   notice: '支付后凭取件码到店取货，免运费'
 }

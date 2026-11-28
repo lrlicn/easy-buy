@@ -11,9 +11,12 @@ export interface Order {
   items: CartItem[]
   total: number
   pickupCode: string // 6 位取件码，到店核销
-  status: 'paid' | 'completed' | 'cancelled' // paid=待取件 completed=已核销 cancelled=已取消
+  // paid=待取件 refund_requested=退款申请中 refunded=已退款 completed=已核销 cancelled=已取消
+  status: 'paid' | 'refund_requested' | 'refunded' | 'completed' | 'cancelled'
   createdAt: number
   completedAt?: number // 核销完成时间（商家端"今日已核销"按此过滤）
+  refundRequestedAt?: number // 顾客申请退款时间
+  refundedAt?: number // 商家同意退款时间
 }
 
 // 微信端且配置了云环境才启用真实云端
@@ -94,28 +97,54 @@ export async function listMyOrders(): Promise<Order[]> {
 }
 
 // 商家：全部订单（真实模式在云函数内校验 staff，非店员调用会抛错）
-export async function listAllOrders(): Promise<Order[]> {
+// 商家：按状态筛选拉取订单（statuses 为空 = 全部；skip 分页偏移）
+// hasMore 由服务端按"整页拉满"判断，前端据此决定是否显示加载更多
+export async function listAllOrders(statuses: Order['status'][] = [], skip = 0): Promise<{ list: Order[]; hasMore: boolean }> {
   if (cloudReady()) {
-    const res = await callCloud('order', { action: 'listAll' })
-    return res.list as Order[]
+    const res = await callCloud('order', { action: 'listAll', statuses, skip })
+    return { list: res.list as Order[], hasMore: res.hasMore === true }
   }
-  return (Taro.getStorageSync('mock_orders') as Order[]) || []
+  const all = ((Taro.getStorageSync('mock_orders') as Order[]) || [])
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .filter(o => statuses.length === 0 || statuses.includes(o.status))
+  return { list: all.slice(skip, skip + 20), hasMore: skip + 20 < all.length }
 }
 
-// 买家：取消待取件订单（仅本人、仅 paid 状态；成功返回 true）
-export async function cancelOrder(id: string): Promise<boolean> {
+// 买家：对已付款订单发起退款申请（商家审核，同意后退款并回补库存）
+// mock 模式状态存本地；真实支付接入后云函数在此对接原路退款
+export async function requestRefund(id: string): Promise<boolean> {
   if (cloudReady()) {
-    const res = await callCloud('order', { action: 'cancel', id })
+    const res = await callCloud('order', { action: 'requestRefund', id })
     return res.ok === true
   }
   const openid = await getOpenId()
   const list = (Taro.getStorageSync('mock_orders') as Order[]) || []
   const target = list.find(o => o.id === id && o.openid === openid && o.status === 'paid')
   if (!target) return false
-  target.status = 'cancelled'
+  target.status = 'refund_requested'
+  target.refundRequestedAt = Date.now()
   Taro.setStorageSync('mock_orders', list)
-  // mock 模式回补本地库存
-  adjustMockStock(target.items, 1)
+  return true
+}
+
+// 商家：处理退款申请（approve=true 同意退款并回补库存；false 拒绝回待取件）
+export async function handleRefund(id: string, approve: boolean): Promise<boolean> {
+  if (cloudReady()) {
+    const res = await callCloud('order', { action: 'handleRefund', id, approve })
+    const ok = res.ok === true
+    // 同意退款后库存已在云端回补，失效本地商品缓存避免各页显示旧库存
+    if (ok && approve) invalidateGoodsCache()
+    return ok
+  }
+  const list = (Taro.getStorageSync('mock_orders') as Order[]) || []
+  const target = list.find(o => o.id === id && o.status === 'refund_requested')
+  if (!target) return false
+  target.status = approve ? 'refunded' : 'paid'
+  if (approve) {
+    target.refundedAt = Date.now()
+    adjustMockStock(target.items, 1)
+  }
+  Taro.setStorageSync('mock_orders', list)
   return true
 }
 

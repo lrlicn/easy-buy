@@ -1,3 +1,7 @@
+// 自定义 tabBar 仅微信端启用：店员可见"核销"标签（顾客隐藏）
+// H5 端不支持 custom-tab-bar，仍用原生渲染（列表含核销，开发预览用）
+const isWeapp = process.env.TARO_ENV === 'weapp'
+
 export default defineAppConfig({
   pages: [
     'pages/index/index',
@@ -10,6 +14,7 @@ export default defineAppConfig({
     'pages/profile/index'
   ],
   tabBar: {
+    custom: isWeapp,
     color: '#999999',
     selectedColor: '#1a1a1a',
     backgroundColor: '#ffffff',
@@ -28,6 +33,12 @@ export default defineAppConfig({
         selectedIconPath: 'assets/tabbar/cart-active.png'
       },
       {
+        pagePath: 'pages/admin/verify/index',
+        text: '核销',
+        iconPath: 'assets/tabbar/scan.png',
+        selectedIconPath: 'assets/tabbar/scan-active.png'
+      },
+      {
         pagePath: 'pages/profile/index',
         text: '我的',
         iconPath: 'assets/tabbar/profile.png',
@@ -38,7 +49,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#1a1a1a',
-    navigationBarTitleText: '门店扫码购',
+    navigationBarTitleText: '衣码购',
     navigationBarTextStyle: 'white'
   }
 })

@@ -2,59 +2,84 @@
   min-height: 100vh;
   padding: 24rpx;
   box-sizing: border-box;
+
+  // 微信端自定义 tabBar 叠加在页面之上，最后一行商品不被遮挡
+  &.page-weapp {
+    padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  }
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24rpx;
+  margin-bottom: 20rpx;
 
   .shop-name {
     font-size: 36rpx;
     font-weight: 600;
   }
+}
 
-  // 扫码图标：内嵌 SVG data URI（H5/小程序双端兼容），扫描框取景样式
-  .scan-entry {
-    width: 44rpx;
-    height: 44rpx;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%231a1a1a' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M8 16V10a2 2 0 0 1 2-2h6'/%3E%3Cpath d='M32 8h6a2 2 0 0 1 2 2v6'/%3E%3Cpath d='M40 32v6a2 2 0 0 1-2 2h-6'/%3E%3Cpath d='M16 40h-6a2 2 0 0 1-2-2v-6'/%3E%3Cpath d='M10 24h28'/%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
+// 搜索条 + 扫码 icon 一体栏（主流电商首页样式，替代占首屏的扫码大卡片）
+.search-bar {
+  display: flex;
+  align-items: center;
+  height: 72rpx;
+  background: #fff;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  margin-bottom: 28rpx;
+
+  .search-icon {
+    width: 32rpx;
+    height: 32rpx;
+    margin-right: 16rpx;
+    flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23999' stroke-width='4' stroke-linecap='round'%3E%3Ccircle cx='21' cy='21' r='13'/%3E%3Cpath d='M31 31l9 9'/%3E%3C/svg%3E") no-repeat center / contain;
+  }
+
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    height: 72rpx;
+    line-height: 72rpx;
+    font-size: 26rpx;
+  }
+
+  .search-clear {
+    width: 40rpx;
+    height: 40rpx;
+    line-height: 40rpx;
+    text-align: center;
+    font-size: 32rpx;
+    color: #bbb;
+    flex-shrink: 0;
+  }
+
+  .scan-divider {
+    width: 1rpx;
+    height: 32rpx;
+    background: #ddd;
+    margin: 0 20rpx;
+    flex-shrink: 0;
+  }
+
+  // 扫码 icon：扫描框取景样式（内嵌 SVG，双端兼容）
+  .scan-icon {
+    width: 40rpx;
+    height: 40rpx;
+    flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%231a1a1a' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M8 16V10a2 2 0 0 1 2-2h6'/%3E%3Cpath d='M32 8h6a2 2 0 0 1 2 2v6'/%3E%3Cpath d='M40 32v6a2 2 0 0 1-2 2h-6'/%3E%3Cpath d='M16 40h-6a2 2 0 0 1-2-2v-6'/%3E%3Cpath d='M10 24h28'/%3E%3C/svg%3E") no-repeat center / contain;
   }
 }
 
-.scan-card {
-  background: var(--color-primary);
-  border-radius: 24rpx;
-  padding: 48rpx 40rpx;
-  color: #fff;
+// 搜索无结果
+.empty-search {
   text-align: center;
-  margin-bottom: 32rpx;
-
-  .scan-title {
-    display: block;
-    font-size: 40rpx;
-    font-weight: 600;
-  }
-
-  .scan-tip {
-    display: block;
-    font-size: 24rpx;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 16rpx 0 40rpx;
-  }
-
-  .scan-btn {
-    background: #fff;
-    color: var(--color-text);
-    border-radius: 44rpx;
-    height: 80rpx;
-    line-height: 80rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-  }
+  padding: 120rpx 0;
+  color: var(--color-text-muted);
+  font-size: 26rpx;
 }
 
 .section-title {
